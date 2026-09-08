@@ -51,6 +51,7 @@ except ImportError:
 if TYPE_CHECKING:
     import patito.polars
 
+
 # The generic type of a single row in given Relation.
 # Should be a typed subclass of Model.
 ModelType = TypeVar("ModelType", bound="Model")
@@ -859,18 +860,15 @@ class Model(BaseModel, metaclass=ModelMetaclass):
 
         # Recent polar changes throw an error when concating series of different lenghts, determine the size of the dataframe
         max_series_size = None
-        for _, v in kwargs:
+
+        for _, v in kwargs.items():
             if isinstance(v, Iterable) and not isinstance(v, str):
                 series_size = len(v)
             else:
                 series_size = 1
             if max_series_size is None:
                 max_series_size = series_size
-            else:
-                if max_series_size != series_size:
-                    raise ValueError(
-                        "Polars can not handle concating series of differing lengths"
-                    )
+
         if max_series_size is None:
             max_series_size = 1
 
@@ -885,10 +883,10 @@ class Model(BaseModel, metaclass=ModelMetaclass):
                 else:
                     example_values = [
                         cls.example_value(field=column_name)
-                        for i in range(max_series_size)
+                        for _ in range(max_series_size)
                     ]
                     series.append(
-                        pl.Series(column_name, values=[example_values], dtype=dtype)
+                        pl.Series(column_name, values=example_values, dtype=dtype)
                     )
                 continue
 
