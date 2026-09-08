@@ -858,20 +858,6 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         if wrong_columns:
             raise TypeError(f"{cls.__name__} does not contain fields {wrong_columns}!")
 
-        # Recent polar changes throw an error when concating series of different lenghts, determine the size of the dataframe
-        max_series_size = None
-
-        for _, v in kwargs.items():
-            if isinstance(v, Iterable) and not isinstance(v, str):
-                series_size = len(v)
-            else:
-                series_size = 1
-            if max_series_size is None:
-                max_series_size = series_size
-
-        if max_series_size is None:
-            max_series_size = 1
-
         series: list[pl.Series | pl.Expr] = []
         unique_series = []
         for column_name, dtype in cls.dtypes.items():
@@ -881,12 +867,10 @@ class Model(BaseModel, metaclass=ModelMetaclass):
                         pl.first().cum_count().cast(dtype).alias(column_name)
                     )
                 else:
-                    example_values = [
-                        cls.example_value(field=column_name)
-                        for _ in range(max_series_size)
-                    ]
                     series.append(
-                        pl.Series(column_name, values=example_values, dtype=dtype)
+                        pl.lit(cls.example_value(field=column_name), dtype=dtype).alias(
+                            column_name
+                        )
                     )
                 continue
 
